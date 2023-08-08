@@ -29,7 +29,9 @@ import requests
 import codecs
 
 import gevent
-from gevent import monkey; monkey.patch_all()
+from gevent import monkey;
+
+monkey.patch_all()
 from bs4 import BeautifulSoup
 
 # 汉字拼音识别
@@ -37,6 +39,7 @@ from pypinyin import pinyin, lazy_pinyin, Style
 
 # 笔划数识别
 from cjklib.characterlookup import CharacterLookup
+
 cjk = CharacterLookup('C')
 
 # 汉字偏旁识别
@@ -47,16 +50,19 @@ sys.setdefaultencoding("utf-8")
 
 # 代理配置
 proxies = {
-    
+
 }
 
+
 class BabyName():
-    def __init__(self, config={}, name_dict={}, is_score=True, use_proxy=False, is_check_component=False, component_preferences="", component_list=[], is_check_duplicate_name=False, max_thread=5, is_filter_out=False):
+    def __init__(self, config={}, name_dict={}, is_score=False, use_proxy=False, is_check_component=False,
+                 component_preferences="", component_list=[], is_check_duplicate_name=False, max_thread=5,
+                 is_filter_out=False):
         # 根目录
         self.ROOTDIR = (os.path.dirname(os.path.realpath(__file__)))
 
         # 新华字典文件路径
-        self.dictionary_filepath = self.ROOTDIR+"/dicts/xinhua.csv"
+        self.dictionary_filepath = self.ROOTDIR + "/dicts/xinhua.csv"
         self.component = Component(dictionary_filepath=self.dictionary_filepath)
 
         # 系统配置
@@ -83,9 +89,9 @@ class BabyName():
         self.use_proxy = use_proxy
 
         # 是否检查偏旁
-        self.is_check_component = is_check_component 
-        self.component_preferences = component_preferences   # 偏旁偏好
-        self.component_list = component_list                 # 金木水火土对应汉字列表
+        self.is_check_component = is_check_component
+        self.component_preferences = component_preferences  # 偏旁偏好
+        self.component_list = component_list  # 金木水火土对应汉字列表
 
         # 是否检查重名
         self.is_check_duplicate_name = is_check_duplicate_name
@@ -108,7 +114,8 @@ class BabyName():
             writer.writeheader()
 
     # 将结果写到csv文件中
-    def write_output(self, _filename="./egg.csv", _fieldnames=['first_name', 'last_name'], _values={'first_name': 'wang', 'last_name': 'wu'}):
+    def write_output(self, _filename="./egg.csv", _fieldnames=['first_name', 'last_name'],
+                     _values={'first_name': 'wang', 'last_name': 'wu'}):
         with open(_filename, 'a+') as csvfile:
             # 列名
             fieldnames = _fieldnames
@@ -129,15 +136,15 @@ class BabyName():
             proxyPass = "xxxxxxx"
 
             proxyMeta = "http://%(user)s:%(pass)s@%(host)s:%(port)s" % {
-              "host" : proxyHost,
-              "port" : proxyPort,
-              "user" : proxyUser,
-              "pass" : proxyPass,
+                "host": proxyHost,
+                "port": proxyPort,
+                "user": proxyUser,
+                "pass": proxyPass,
             }
 
             proxies = {
-                "http"  : proxyMeta,
-                "https" : proxyMeta,
+                "http": proxyMeta,
+                "https": proxyMeta,
             }
 
         else:
@@ -146,7 +153,7 @@ class BabyName():
         return proxies
 
     # 名字组合生成
-    def custom_names_generate(self): 
+    def custom_names_generate(self):
         # 单名去重
         single_name_uniq = []
 
@@ -164,10 +171,10 @@ class BabyName():
                     # 根据五行缺啥, 选择有益、互补的名字
                     if self.is_check_component:
                         if str(line).strip() in self.component_list or str(name).strip() in self.component_list:
-                            p_name = str(line).strip()+str(name).strip()
+                            p_name = str(line).strip() + str(name).strip()
                             single_name_group.add(p_name)
                     else:
-                        p_name = str(line).strip()+str(name).strip()
+                        p_name = str(line).strip() + str(name).strip()
                         single_name_group.add(p_name)
 
         return single_name_group
@@ -176,6 +183,7 @@ class BabyName():
         根据是否使用单字和用户配置的性别参数，获取所有的名字列表。
         :return: 名字列表
     """
+
     def get_all_names(self):
         print("[*] 姓名字典生成中, 请稍后...")
 
@@ -254,21 +262,21 @@ class BabyName():
         random.shuffle(all_names)
 
         print("[*] 姓:%s, 性别:%s, 出生地(省):%s, 出生地(市):%s, 出生时辰:%s-%s-%s %s:%s:00, 命中缺:%s, 五行得分:%s" % (
-                self.CONFIG["name_prefix"],
-                self.CONFIG["sex"],
-                self.CONFIG["area_province"],
-                self.CONFIG["area_region"],
-                self.CONFIG["year"],
-                self.CONFIG["month"],
-                self.CONFIG["day"],
-                self.CONFIG["hour"],
-                self.CONFIG["minute"],
-                wuxing["wuxing_miss"],
-                json.dumps(wuxing["wuxing_score"], ensure_ascii=False)
-             )
+            self.CONFIG["name_prefix"],
+            self.CONFIG["sex"],
+            self.CONFIG["area_province"],
+            self.CONFIG["area_region"],
+            self.CONFIG["year"],
+            self.CONFIG["month"],
+            self.CONFIG["day"],
+            self.CONFIG["hour"],
+            self.CONFIG["minute"],
+            wuxing["wuxing_miss"],
+            json.dumps(wuxing["wuxing_score"], ensure_ascii=False)
         )
+              )
 
-        print("[*] 导入名字 %s 个, 耗时 %s 秒 ." % (len(all_names), float(time.time()) - t1)  )
+        print("[*] 导入名字 %s 个, 耗时 %s 秒 ." % (len(all_names), float(time.time()) - t1))
 
         return all_names
 
@@ -321,18 +329,18 @@ class BabyName():
                             girls_total = node.find_all("font")[2].get_text()
                             boys_total = node.find_all("font")[3].get_text()
                     else:
-                        names_total = "0人" 
+                        names_total = "0人"
                         girls_total = "女生0.00%"
                         boys_total = "男生0.00%"
                 else:
-                    names_total = "0人" 
+                    names_total = "0人"
                     girls_total = "女生0.00%"
                     boys_total = "男生0.00%"
             except Exception as err:
-                names_total = "0人" 
+                names_total = "0人"
                 girls_total = "女生0.00%"
                 boys_total = "男生0.00%"
-                print 1111,err
+                print 1111, err
 
             girls_num = re.findall("\d*\.\d*", girls_total)[0]
             boys_num = re.findall("\d*\.\d*", boys_total)[0]
@@ -346,7 +354,7 @@ class BabyName():
             else:
                 name_sex = "中性"
         else:
-            names_total = "0人" 
+            names_total = "0人"
             girls_total = "女生0.00%"
             boys_total = "男生0.00%"
             name_sex = "未知"
@@ -413,7 +421,8 @@ class BabyName():
             # 获取姓名八字/五格
             # ============================================================
             proxies = self.get_proxy()
-            content = requests.post(url=self.REQUEST_URL, data=_data, headers=self.headers, timeout=5, proxies=proxies).content
+            content = requests.post(url=self.REQUEST_URL, data=_data, headers=self.headers, timeout=5,
+                                    proxies=proxies).content
             soup = BeautifulSoup(content, 'html.parser')
 
             # 根据生辰八字, 获取命中缺什么, 五行得分
@@ -438,23 +447,23 @@ class BabyName():
 
                     # 根据生辰八字, 了解命中缺什么, 挑名字时候有针对的选则
                     if _wuxing_score:
-                        wuxing_miss = sorted(_wuxing_score.items(), key=lambda x:x[1])[0][0]
+                        wuxing_miss = sorted(_wuxing_score.items(), key=lambda x: x[1])[0][0]
 
                         if wuxing_miss == '金':
-                            self.component_preferences = "钅"             # 偏旁偏好
-                            self.component_list = settings.JIN        # 金木水火土对应汉字列表
+                            self.component_preferences = "钅"  # 偏旁偏好
+                            self.component_list = settings.JIN  # 金木水火土对应汉字列表
                         elif wuxing_miss == '木':
-                            self.component_preferences = "木"             # 偏旁偏好
-                            self.component_list = settings.MU        # 金木水火土对应汉字列表
+                            self.component_preferences = "木"  # 偏旁偏好
+                            self.component_list = settings.MU  # 金木水火土对应汉字列表
                         elif wuxing_miss == '水':
-                            self.component_preferences = "氵"             # 偏旁偏好
-                            self.component_list = settings.SHUI        # 金木水火土对应汉字列表
+                            self.component_preferences = "氵"  # 偏旁偏好
+                            self.component_list = settings.SHUI  # 金木水火土对应汉字列表
                         elif wuxing_miss == '火':
-                            self.component_preferences = "火"             # 偏旁偏好
-                            self.component_list = settings.HUO        # 金木水火土对应汉字列表
+                            self.component_preferences = "火"  # 偏旁偏好
+                            self.component_list = settings.HUO  # 金木水火土对应汉字列表
                         elif wuxing_miss == '土':
-                            self.component_preferences = "土"             # 偏旁偏好
-                            self.component_list = settings.TU        # 金木水火土对应汉字列表
+                            self.component_preferences = "土"  # 偏旁偏好
+                            self.component_list = settings.TU  # 金木水火土对应汉字列表
 
                         result_data['wuxing_miss'] = wuxing_miss
                         result_data['wuxing_score'] = _wuxing_score
@@ -525,7 +534,8 @@ class BabyName():
                 return False
 
         # 检查同名人数
-        names_total, girls_total, boys_total, name_sex = self.check_duplicate_names(full_name)
+        # names_total, girls_total, boys_total, name_sex = self.check_duplicate_names(full_name)
+        names_total, girls_total, boys_total, name_sex = 0, 0, 0, 0
 
         result_data['names_total'] = names_total
         result_data['girls_total'] = girls_total
@@ -553,14 +563,16 @@ class BabyName():
             # 获取姓名八字/五格
             # ============================================================
             proxies = self.get_proxy()
-            content = requests.post(url=self.REQUEST_URL, data=_data, headers=self.headers, timeout=5, proxies=proxies).content
+            content = requests.post(url=self.REQUEST_URL, data=_data, headers=self.headers, timeout=5,
+                                    proxies=proxies).content
             soup = BeautifulSoup(content, 'html.parser')
 
             # 姓名五格&八字评分
             for node in soup.find_all("div", class_="sm_wuxing"):
                 node_cont = node.get_text()
                 if u'姓名五格评分' in node_cont:
-                    result_data["wuge_score"] = re.findall(r"\n(.*?) ", node_cont, re.S)[0].split("：")[1].split("\n")[0].strip("分")
+                    result_data["wuge_score"] = re.findall(r"\n(.*?) ", node_cont, re.S)[0].split("：")[1].split("\n")[
+                        0].strip("分")
 
                 if u'姓名八字评分' in node_cont:
                     result_data["bazi_score"] = re.findall(r"\n(.*?) ", node_cont, re.S)[0].split("：")[2].split("分")[0]
@@ -619,7 +631,7 @@ class BabyName():
             return False
 
         # 打印评估结果
-        print "\t".join((str(cur_idx) + "/" + str(shengyushu), 
+        print "\t".join((str(cur_idx) + "/" + str(shengyushu),
                          u"姓名=" + name_data_dict['full_name'],
                          u"拼音=" + _pinyin,
                          u"八字评分=" + str(name_data_dict['bazi_score']),
@@ -634,26 +646,26 @@ class BabyName():
 
         # 保存评估结果
         self.write_output(
-                # 文件名
-                _filename = self.result_output,
-                # 列名
-                _fieldnames=_fieldnames, 
-                # 内容
-                _values={
-                        'ID': cur_idx,
-                        '姓名': name_data_dict['full_name'], 
-                        '拼音': _pinyin,
-                        '八字评分': str(name_data_dict['bazi_score']),
-                        '五格评分': str(name_data_dict['wuge_score']),
-                        '命主星宿': str(name_data_dict['mingzhuxingxiu']),
-                        '命宫': str(name_data_dict['minggong']),
-                        '笔划数': str(bihua),
-                        '重名数': str(name_data_dict['names_total']),
-                        '女生占比': str(name_data_dict['girls_total']),
-                        '男生占比': str(name_data_dict['boys_total']),
-                        '性别偏向': name_data_dict['name_sex'],
-                        '总分': str(name_data_dict['total_score'])
-                }
+            # 文件名
+            _filename=self.result_output,
+            # 列名
+            _fieldnames=_fieldnames,
+            # 内容
+            _values={
+                'ID': cur_idx,
+                '姓名': name_data_dict['full_name'],
+                '拼音': _pinyin,
+                '八字评分': str(name_data_dict['bazi_score']),
+                '五格评分': str(name_data_dict['wuge_score']),
+                '命主星宿': str(name_data_dict['mingzhuxingxiu']),
+                '命宫': str(name_data_dict['minggong']),
+                '笔划数': str(bihua),
+                '重名数': str(name_data_dict['names_total']),
+                '女生占比': str(name_data_dict['girls_total']),
+                '男生占比': str(name_data_dict['boys_total']),
+                '性别偏向': name_data_dict['name_sex'],
+                '总分': str(name_data_dict['total_score'])
+            }
         )
 
     def run(self):
@@ -665,16 +677,17 @@ class BabyName():
         name_data_list = []
 
         # 输出文件列名
-        _fieldnames = ["ID", "姓名", "拼音", "八字评分", "五格评分", "命主星宿", "命宫", "笔划数", "重名数", "女生占比", "男生占比", "性别偏向", "总分"]
+        _fieldnames = ["ID", "姓名", "拼音", "八字评分", "五格评分", "命主星宿", "命宫", "笔划数", "重名数", "女生占比",
+                       "男生占比", "性别偏向", "总分"]
 
         # 生成表头
         if os.path.exists(self.result_output):
             pass
         else:
-            self.generate_field(                    # 文件名
-                _filename = self.result_output,
+            self.generate_field(  # 文件名
+                _filename=self.result_output,
                 # 列名
-                _fieldnames=_fieldnames, 
+                _fieldnames=_fieldnames,
             )
 
         # 遍历所有名字评分
@@ -689,9 +702,12 @@ class BabyName():
                     cur_idx += 1
                     shengyushu = len(self.all_names)
                     name_postfix = self.all_names.pop()
-                    gevent_list.append(gevent.spawn(self.online_compute_score, _fieldnames, name_postfix, cur_idx, shengyushu))
+                    gevent_list.append(
+                        gevent.spawn(self.online_compute_score, _fieldnames, name_postfix, cur_idx, shengyushu))
                 else:
                     break
+
+
 if __name__ == "__main__":
     """
     Tips:
@@ -709,9 +725,9 @@ if __name__ == "__main__":
     use_proxy = False
 
     # 是否检查命格缺失?
-    is_check_component = True
-    component_preferences = "木" # is_check_component设置为True时会自动判断.
-    component_list = settings.MU # 木命对应的名字
+    is_check_component = False
+    component_preferences = "木"  # is_check_component设置为True时会自动判断.
+    component_list = settings.MU  # 木命对应的名字
 
     # 是否检查重名
     is_check_duplicate_name = True
@@ -722,8 +738,8 @@ if __name__ == "__main__":
     # 最大线程数
     max_thread = 10
 
-    babyname = BabyName(config=settings.CONFIG, name_dict=settings.NAME_DICTS, is_score=is_score, use_proxy=use_proxy, is_check_component=is_check_component, component_preferences=component_preferences, component_list=component_list, is_check_duplicate_name=is_check_duplicate_name, max_thread=max_thread, is_filter_out=is_filter_out)
+    babyname = BabyName(config=settings.CONFIG, name_dict=settings.NAME_DICTS, is_score=is_score, use_proxy=use_proxy,
+                        is_check_component=is_check_component, component_preferences=component_preferences,
+                        component_list=component_list, is_check_duplicate_name=is_check_duplicate_name,
+                        max_thread=max_thread, is_filter_out=is_filter_out)
     babyname.run()
-
-
-
