@@ -80,7 +80,7 @@ class Component(object):
         return component
 
 if __name__ == "__main__":
-    dictionary_filepath = "/Users/callmefeifei/Desktop/scripts/baby-name/dicts/xinhua.csv"
+    dictionary_filepath = "D:/dev/workspace/baby-names/dicts/xinhua.csv"
     component = Component(dictionary_filepath=dictionary_filepath)
     print component.get_component("振")
 

@@ -100,7 +100,7 @@ class BabyName():
         self.is_filter_out = is_filter_out
 
         # 最大线程数
-        self.max_thread = 10
+        self.max_thread = max_thread
 
     # 生成csv文件列名
     def generate_field(self, _filename="./egg.csv", _fieldnames=['first_name', 'last_name']):
@@ -709,17 +709,8 @@ class BabyName():
 
 
 if __name__ == "__main__":
-    """
-    Tips:
-                ---- 程序仅供参考，祝大家能够给自己宝宝起到好名字 ----
-        1. 运行前, 先配置config/settings.py中相关配置, 如出生日期、姓氏等.
-        2. 打分接口可能会有变化或随着时间长久失效, 调试替换其他接口即可.
-        3. 部分接口请求次数过多可能会被封IP, 推荐购买使用 "猿人云" 提供的动态转发代理, 并替换本文件get_proxy方法中的授权信息即可. (可使用我的推广链接申请: https://ape.vip/T-ovAUDi)
-    最后, 如该程序对您有所帮助, 请关注作者微信服务号以表支持(搜索: "欧赛安全"), 后续将提供更多有意思的开源代码或在线小工具.
-    """
-
     # 是否进行打分
-    is_score = True
+    is_score = False
 
     # 是否使用代理
     use_proxy = False
@@ -730,13 +721,13 @@ if __name__ == "__main__":
     component_list = settings.MU  # 木命对应的名字
 
     # 是否检查重名
-    is_check_duplicate_name = True
+    is_check_duplicate_name = False
 
     # 是否过滤掉重名数为零的(设置为True, renren网查不到的将不显示) 
-    is_filter_out = True
+    is_filter_out = False
 
     # 最大线程数
-    max_thread = 10
+    max_thread = 1
 
     babyname = BabyName(config=settings.CONFIG, name_dict=settings.NAME_DICTS, is_score=is_score, use_proxy=use_proxy,
                         is_check_component=is_check_component, component_preferences=component_preferences,
