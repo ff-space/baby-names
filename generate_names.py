@@ -54,7 +54,7 @@ class BabyName():
     # 初始化
     def __init__(self, config={}, name_dict={}, is_score=False, use_proxy=False, is_check_component=False,
                  component_preferences="", component_list=[], max_thread=5,
-                 is_filter_out=False):
+                 is_filter_out=False, wuxing_miss=None):
         # 根目录
         self.ROOTDIR = (os.path.dirname(os.path.realpath(__file__)))
         # 新华字典文件路径
@@ -76,8 +76,9 @@ class BabyName():
         self.is_score = is_score
         # 使用代理
         self.use_proxy = use_proxy
-        # 是否检查偏旁
+        # 是否检查五行和偏旁
         self.is_check_component = is_check_component
+        self.wuxing_miss = wuxing_miss  # 指定缺五行
         self.component_preferences = component_preferences  # 偏旁偏好
         self.component_list = component_list  # 金木水火土对应汉字列表
         # 是否过滤重名数为零的
@@ -182,9 +183,27 @@ class BabyName():
         if self.is_check_component:
             wuxing = self.compute_name_wuxing()
         else:
+            # 不检查五行，则需要自己在setting指定，如果不指定则无
             wuxing = {}
-            wuxing["wuxing_miss"] = "无"
-            wuxing["wuxing_score"] = "无"
+            wuxing["wuxing_miss"] = '无' if self.wuxing_miss is None else self.wuxing_miss
+            if self.wuxing_miss is not None:
+                self.is_check_component = True
+                if self.wuxing_miss == '金':
+                    self.component_preferences = "钅"  # 偏旁偏好
+                    self.component_list = settings.JIN  # 金木水火土对应汉字列表
+                elif self.wuxing_miss == '木':
+                    self.component_preferences = "木"  # 偏旁偏好
+                    self.component_list = settings.MU  # 金木水火土对应汉字列表
+                elif self.wuxing_miss == '水':
+                    self.component_preferences = "氵"  # 偏旁偏好
+                    self.component_list = settings.SHUI  # 金木水火土对应汉字列表
+                elif self.wuxing_miss == '火':
+                    self.component_preferences = "火"  # 偏旁偏好
+                    self.component_list = settings.HUO  # 金木水火土对应汉字列表
+                elif self.wuxing_miss == '土':
+                    self.component_preferences = "土"  # 偏旁偏好
+                    self.component_list = settings.TU  # 金木水火土对应汉字列表
+            # wuxing["wuxing_score"] = "无"
 
         # 整理名字
         if has_limit_word:
@@ -215,10 +234,10 @@ class BabyName():
                 fpath_input_single = self.NAME_DICT['girls_single']
 
             # 双字名
-            with codecs.open(fpath_input_double, encoding='utf-8') as line:
+            for line in codecs.open(fpath_input_double, encoding='utf-8'):
                 iter_name = str(line).strip()
 
-                # 根据五行缺乏, 仅过滤名字中包含对应属性的名字
+                # 根据五行缺乏, 过滤掉对应字没有包含在五行的词组
                 if self.is_check_component:
                     if iter_name[-3:] in self.component_list or iter_name[:3] in self.component_list:
                         target_name_postfixs.add(iter_name)
@@ -229,7 +248,7 @@ class BabyName():
             with codecs.open(fpath_input_single, encoding='utf-8') as line:
                 iter_name = str(line).strip()
 
-                # 根据五行缺乏, 仅过滤名字中包含对应属性的名字
+                # 根据五行缺乏, 过滤掉对应字没有包含在五行的词组
                 if self.is_check_component:
                     if iter_name[-3:] in self.component_list or iter_name[:3] in self.component_list:
                         target_name_postfixs.add(iter_name)
@@ -253,9 +272,8 @@ class BabyName():
             self.CONFIG["day"],
             self.CONFIG["hour"],
             self.CONFIG["minute"],
-            '',
-            ''
-            # wuxing["wuxing_miss"],
+            wuxing["wuxing_miss"],
+            '不评分'
             # json.dumps(wuxing["wuxing_score"], ensure_ascii=False)
         ))
 
@@ -598,22 +616,24 @@ class BabyName():
         self.all_names = self.get_all_names()
         cur_idx = 0
         all_count = len(self.all_names)
-        # name_data_list = []
-        #
-        # # 输出文件列名
-        # _fieldnames = ["ID", "姓名", "拼音", "八字评分", "五格评分", "命主星宿", "命宫", "笔划数", "重名数", "女生占比",
-        #                "男生占比", "性别偏向", "总分"]
-        #
-        # # 生成表头
-        # if os.path.exists(self.result_output):
-        #     pass
-        # else:
-        #     self.generate_field(  # 文件名
-        #         _filename=self.result_output,
-        #         # 列名
-        #         _fieldnames=_fieldnames,
-        #     )
-        #
+        for name in range(all_count):
+            print(self.all_names[name])
+        name_data_list = []
+        # 输出文件列名
+        _fieldnames = ["ID", "姓名", "拼音", "八字评分", "五格评分", "命主星宿", "命宫", "笔划数", "重名数", "女生占比",
+                       "男生占比", "性别偏向", "总分"]
+
+        # 生成表头
+        if os.path.exists(self.result_output):
+            print('文件已经存在,请删除后重新生成')
+            pass
+        else:
+            self.generate_field(  # 文件名
+                _filename=self.result_output,
+                # 列名
+                _fieldnames=_fieldnames,
+            )
+
         # # 遍历所有名字评分
         # gevent_list = []
         #
@@ -639,8 +659,11 @@ if __name__ == "__main__":
     use_proxy = False
     # 是否检查命格缺失?
     is_check_component = False
-    component_preferences = "木"  # is_check_component设置为True时会自动判断.
-    component_list = settings.MU  # 木命对应的名字
+    # 指定缺的五行
+    wuxing_miss = '水'
+
+    # component_preferences = "木"  # is_check_component设置为True时会自动判断.
+    # component_list = settings.HUO  # 木命对应的名字
     # 是否检查重名
     is_check_duplicate_name = False
     # 是否过滤掉重名数为零的(设置为True, renren网查不到的将不显示) 
@@ -648,7 +671,6 @@ if __name__ == "__main__":
     # 最大线程数
     max_thread = 1
     babyname = BabyName(config=settings.CONFIG, name_dict=settings.NAME_DICTS, is_score=is_score, use_proxy=use_proxy,
-                        is_check_component=is_check_component, component_preferences=component_preferences,
-                        component_list=component_list,
+                        is_check_component=is_check_component, wuxing_miss=wuxing_miss,
                         max_thread=max_thread, is_filter_out=is_filter_out)
     babyname.run()
