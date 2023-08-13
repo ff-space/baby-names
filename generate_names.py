@@ -14,28 +14,23 @@
 #  *                     --- 结果仅供参考，希望用到的都能够给自家宝宝起到好名字 ---
 #  * 如该程序对您有所帮助, 请关注作者微信服务号以表支持(搜索: "欧赛安全"), 后续将提供更多有意思的开源代码或在线小工具.
 
+import codecs
+import json
+# 导入用到的库
+import os
+import random
+import time
+
+import requests
+from gevent import monkey;
+
 # 配置信息
 from config import settings
 
-# 导入用到的库
-import os
-import re
-import sys
-import csv
-import time
-import json
-import random
-import requests
-import codecs
-
-import gevent
-from gevent import monkey;
-
 monkey.patch_all()
-from bs4 import BeautifulSoup
 
 # 汉字拼音识别
-from pypinyin import pinyin, lazy_pinyin, Style
+from pypinyin import pinyin
 
 # 笔划数识别
 from cjklib.characterlookup import CharacterLookup
@@ -55,50 +50,38 @@ proxies = {
 
 
 class BabyName():
+
+    # 初始化
     def __init__(self, config={}, name_dict={}, is_score=False, use_proxy=False, is_check_component=False,
-                 component_preferences="", component_list=[], is_check_duplicate_name=False, max_thread=5,
+                 component_preferences="", component_list=[], max_thread=5,
                  is_filter_out=False):
         # 根目录
         self.ROOTDIR = (os.path.dirname(os.path.realpath(__file__)))
-
         # 新华字典文件路径
         self.dictionary_filepath = self.ROOTDIR + "/dicts/xinhua.csv"
         self.component = Component(dictionary_filepath=self.dictionary_filepath)
-
         # 系统配置
         self.CONFIG = config
-
         # 姓名字典
         self.NAME_DICT = name_dict
-
         # Headers头
         self.headers = {
             "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.61 Safari/537.36"
         }
-
         # 计算姓名分数网站
         self.REQUEST_URL = settings.REQUEST_URL
-
         # 姓名结果输出
         self.result_output = self.CONFIG['output_fpath']
-
         # 是否打分
         self.is_score = is_score
-
         # 使用代理
         self.use_proxy = use_proxy
-
         # 是否检查偏旁
         self.is_check_component = is_check_component
         self.component_preferences = component_preferences  # 偏旁偏好
         self.component_list = component_list  # 金木水火土对应汉字列表
-
-        # 是否检查重名
-        self.is_check_duplicate_name = is_check_duplicate_name
-
         # 是否过滤重名数为零的
         self.is_filter_out = is_filter_out
-
         # 最大线程数
         self.max_thread = max_thread
 
@@ -186,7 +169,6 @@ class BabyName():
 
     def get_all_names(self):
         print("[*] 姓名字典生成中, 请稍后...")
-
         t1 = float(time.time())
         target_name_postfixs = set()
 
@@ -212,7 +194,7 @@ class BabyName():
             elif self.CONFIG["sex"] == "女":
                 fpath_input = self.NAME_DICT['girls_single']
 
-            for line in open(self.NAME_DICT['boys_single']):
+            with codecs.open(self.NAME_DICT['boys_single'], encoding='utf-8') as line:
                 iter_name = str(line).strip()
 
                 # 根据五行欠缺, 仅过滤名字中包含对应属性的名字
@@ -233,7 +215,7 @@ class BabyName():
                 fpath_input_single = self.NAME_DICT['girls_single']
 
             # 双字名
-            for line in open(fpath_input_double):
+            with codecs.open(fpath_input_double, encoding='utf-8') as line:
                 iter_name = str(line).strip()
 
                 # 根据五行缺乏, 仅过滤名字中包含对应属性的名字
@@ -244,7 +226,7 @@ class BabyName():
                     target_name_postfixs.add(iter_name)
 
             # 单字名
-            for line in open(fpath_input_single):
+            with codecs.open(fpath_input_single, encoding='utf-8') as line:
                 iter_name = str(line).strip()
 
                 # 根据五行缺乏, 仅过滤名字中包含对应属性的名字
@@ -271,13 +253,13 @@ class BabyName():
             self.CONFIG["day"],
             self.CONFIG["hour"],
             self.CONFIG["minute"],
-            wuxing["wuxing_miss"],
-            json.dumps(wuxing["wuxing_score"], ensure_ascii=False)
-        )
-              )
+            '',
+            ''
+            # wuxing["wuxing_miss"],
+            # json.dumps(wuxing["wuxing_score"], ensure_ascii=False)
+        ))
 
         print("[*] 导入名字 %s 个, 耗时 %s 秒 ." % (len(all_names), float(time.time()) - t1))
-
         return all_names
 
     # 查看偏旁
@@ -302,64 +284,6 @@ class BabyName():
             return False
         except Exception as e:
             return False
-
-    # 查看重名(通过人人网)
-    def check_duplicate_names(self, name):
-        if self.is_check_duplicate_name:
-            url = "http://name.renren.com/tongMing/search"
-            params = {}
-            params["q"] = name
-            params["cx"] = "014540359382904656588:9tf8clwp-ki"
-            params["ie"] = "UTF-8"
-
-            try:
-                resp = requests.post(url=url, data=params, headers=self.headers, timeout=10, allow_redirects=False)
-                if resp.status_code == 301:
-                    next_url = resp.__dict__['headers']['location']
-                    body = requests.get(url=next_url, headers=self.headers, timeout=10).content
-
-                    # 解析同名数量
-                    soup = BeautifulSoup(body, 'html.parser')
-                    duplicate_result = soup.find_all("p", class_="search_tip")
-
-                    if duplicate_result:
-                        for node in duplicate_result:
-                            node_cont = node.get_text()
-                            names_total = node.find_all("font")[1].get_text()
-                            girls_total = node.find_all("font")[2].get_text()
-                            boys_total = node.find_all("font")[3].get_text()
-                    else:
-                        names_total = "0人"
-                        girls_total = "女生0.00%"
-                        boys_total = "男生0.00%"
-                else:
-                    names_total = "0人"
-                    girls_total = "女生0.00%"
-                    boys_total = "男生0.00%"
-            except Exception as err:
-                names_total = "0人"
-                girls_total = "女生0.00%"
-                boys_total = "男生0.00%"
-                print 1111, err
-
-            girls_num = re.findall("\d*\.\d*", girls_total)[0]
-            boys_num = re.findall("\d*\.\d*", boys_total)[0]
-
-            # 名字性别偏向
-            name_sex = ""
-            if int(float(girls_num)) > int(float(boys_num)):
-                name_sex = "女"
-            elif int(float(boys_num)) > int(float(girls_num)):
-                name_sex = "男"
-            else:
-                name_sex = "中性"
-        else:
-            names_total = "0人"
-            girls_total = "女生0.00%"
-            boys_total = "男生0.00%"
-            name_sex = "未知"
-
-        return names_total, girls_total, boys_total, name_sex
 
     def compute_name_wuxing(self, name_postfix="测试"):
         """
@@ -669,68 +593,62 @@ class BabyName():
         )
 
     def run(self):
+        """开始执行处理"""
         # 根据字典获取所有名字列表
         self.all_names = self.get_all_names()
-
         cur_idx = 0
         all_count = len(self.all_names)
-        name_data_list = []
-
-        # 输出文件列名
-        _fieldnames = ["ID", "姓名", "拼音", "八字评分", "五格评分", "命主星宿", "命宫", "笔划数", "重名数", "女生占比",
-                       "男生占比", "性别偏向", "总分"]
-
-        # 生成表头
-        if os.path.exists(self.result_output):
-            pass
-        else:
-            self.generate_field(  # 文件名
-                _filename=self.result_output,
-                # 列名
-                _fieldnames=_fieldnames,
-            )
-
-        # 遍历所有名字评分
-        gevent_list = []
-
-        while True:
-            if len(gevent_list) >= self.max_thread:
-                gevent.joinall(gevent_list)
-                gevent_list = []
-            else:
-                if self.all_names:
-                    cur_idx += 1
-                    shengyushu = len(self.all_names)
-                    name_postfix = self.all_names.pop()
-                    gevent_list.append(
-                        gevent.spawn(self.online_compute_score, _fieldnames, name_postfix, cur_idx, shengyushu))
-                else:
-                    break
+        # name_data_list = []
+        #
+        # # 输出文件列名
+        # _fieldnames = ["ID", "姓名", "拼音", "八字评分", "五格评分", "命主星宿", "命宫", "笔划数", "重名数", "女生占比",
+        #                "男生占比", "性别偏向", "总分"]
+        #
+        # # 生成表头
+        # if os.path.exists(self.result_output):
+        #     pass
+        # else:
+        #     self.generate_field(  # 文件名
+        #         _filename=self.result_output,
+        #         # 列名
+        #         _fieldnames=_fieldnames,
+        #     )
+        #
+        # # 遍历所有名字评分
+        # gevent_list = []
+        #
+        # while True:
+        #     if len(gevent_list) >= self.max_thread:
+        #         gevent.joinall(gevent_list)
+        #         gevent_list = []
+        #     else:
+        #         if self.all_names:
+        #             cur_idx += 1
+        #             shengyushu = len(self.all_names)
+        #             name_postfix = self.all_names.pop()
+        #             gevent_list.append(
+        #                 gevent.spawn(self.online_compute_score, _fieldnames, name_postfix, cur_idx, shengyushu))
+        #         else:
+        #             break
 
 
 if __name__ == "__main__":
     # 是否进行打分
     is_score = False
-
     # 是否使用代理
     use_proxy = False
-
     # 是否检查命格缺失?
     is_check_component = False
     component_preferences = "木"  # is_check_component设置为True时会自动判断.
     component_list = settings.MU  # 木命对应的名字
-
     # 是否检查重名
     is_check_duplicate_name = False
-
     # 是否过滤掉重名数为零的(设置为True, renren网查不到的将不显示) 
     is_filter_out = False
-
     # 最大线程数
     max_thread = 1
-
     babyname = BabyName(config=settings.CONFIG, name_dict=settings.NAME_DICTS, is_score=is_score, use_proxy=use_proxy,
                         is_check_component=is_check_component, component_preferences=component_preferences,
-                        component_list=component_list, is_check_duplicate_name=is_check_duplicate_name,
+                        component_list=component_list,
                         max_thread=max_thread, is_filter_out=is_filter_out)
     babyname.run()
